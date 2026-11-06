@@ -1,0 +1,47 @@
+name: build
+on: [push, pull_request]
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: go_restful
+        ports:
+          - 5432/tcp
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Get dependencies
+        run: |
+          go mod download
+          go mod verify
+          go install golang.org/x/lint/golint@latest
+
+      - name: Run go lint
+        run: make lint
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        env:
+          APP_DSN: postgres://127.0.0.1:${{ job.services.postgres.ports[5432] }}/go_restful?sslmode=disable&user=postgres&password=postgres
+        run: |
+          make migrate
+          make test
