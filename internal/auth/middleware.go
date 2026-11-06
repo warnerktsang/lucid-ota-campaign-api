@@ -2,9 +2,9 @@ package auth
 
 import (
 	"context"
-	"github.com/dgrijalva/jwt-go"
 	routing "github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/go-ozzo/ozzo-routing/v2/auth"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/warnerktsang/lucid-ota-campaign-api/internal/entity"
 	"github.com/warnerktsang/lucid-ota-campaign-api/internal/errors"
 	"net/http"
@@ -16,12 +16,21 @@ func Handler(verificationKey string) routing.Handler {
 }
 
 // handleToken stores the user identity in the request context so that it can be accessed elsewhere.
+// A validly signed token that lacks the string claims "id" or "name" is rejected (401) rather than panicking.
 func handleToken(c *routing.Context, token *jwt.Token) error {
-	ctx := WithUser(
-		c.Request.Context(),
-		token.Claims.(jwt.MapClaims)["id"].(string),
-		token.Claims.(jwt.MapClaims)["name"].(string),
-	)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return errors.Unauthorized("invalid token claims")
+	}
+	id, ok := claims["id"].(string)
+	if !ok {
+		return errors.Unauthorized("invalid token claims")
+	}
+	name, ok := claims["name"].(string)
+	if !ok {
+		return errors.Unauthorized("invalid token claims")
+	}
+	ctx := WithUser(c.Request.Context(), id, name)
 	c.Request = c.Request.WithContext(ctx)
 	return nil
 }
