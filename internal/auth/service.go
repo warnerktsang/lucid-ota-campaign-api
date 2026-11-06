@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/warnerktsang/lucid-ota-campaign-api/internal/entity"
 	"github.com/warnerktsang/lucid-ota-campaign-api/internal/errors"
 	"github.com/warnerktsang/lucid-ota-campaign-api/pkg/log"
